@@ -119,6 +119,10 @@ public:
     static void freeInstance();
     static Preferences* instance();
 
+    // UI options
+    int getTransferListFontScale() const;
+    void setTransferListFontScale(int scale);
+
     // General options
     QString getLocale() const;
     void setLocale(const QString &locale);

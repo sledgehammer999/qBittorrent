@@ -152,6 +152,16 @@ TransferListWidget::TransferListWidget(QWidget *parent, MainWindow *main_window)
 
     editHotkey = new QShortcut(QKeySequence("F2"), this, SLOT(renameSelectedTorrent()), 0, Qt::WidgetShortcut);
     deleteHotkey = new QShortcut(QKeySequence::Delete, this, SLOT(deleteSelectedTorrents()), 0, Qt::WidgetShortcut);
+
+    m_fontSizeInPixels = true;
+    m_fontBaseSize = font().pixelSize();
+    if (m_fontBaseSize == -1) {
+        m_fontSizeInPixels = false;
+        m_fontBaseSize = font().pointSize();
+    }
+
+    connect(Preferences::instance(), SIGNAL(changed()), SLOT(configure()));
+    configure();
 }
 
 TransferListWidget::~TransferListWidget()
@@ -882,6 +892,12 @@ void TransferListWidget::applyStatusFilter(int f)
 void TransferListWidget::saveSettings()
 {
     Preferences::instance()->setTransHeaderState(header()->saveState());
+}
+
+void TransferListWidget::configure()
+{
+    int fontSize = (m_fontBaseSize * Preferences::instance()->getTransferListFontScale()) / 100;
+    setStyleSheet(QString("* { font-size: %1%2 }").arg(fontSize).arg(m_fontSizeInPixels ? "px" : "pt"));
 }
 
 bool TransferListWidget::loadSettings()
