@@ -208,6 +208,23 @@ void Preferences::setValue(const QString &key, const QVariant &value)
     m_data.insert(key, value);
 }
 
+// UI options
+int Preferences::getTransferListFontScale() const
+{
+    int fontScale = value("Preferences/UI/TransferListFontScale", 100).toInt();
+    if (fontScale < 100)
+        fontScale = 100;
+    else if (fontScale > 200)
+        fontScale = 200;
+
+    return fontScale;
+}
+
+void Preferences::setTransferListFontScale(int scale)
+{
+    setValue("Preferences/UI/TransferListFontScale", scale);
+}
+
 // General options
 QString Preferences::getLocale() const
 {
