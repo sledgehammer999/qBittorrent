@@ -135,6 +135,7 @@ options_imp::options_imp(QWidget *parent)
     connect(comboI18n, SIGNAL(currentIndexChanged(int)), this, SLOT(enableApplyButton()));
     connect(confirmDeletion, SIGNAL(toggled(bool)), this, SLOT(enableApplyButton()));
     connect(checkAltRowColors, SIGNAL(toggled(bool)), this, SLOT(enableApplyButton()));
+    connect(spinFontSize, SIGNAL(valueChanged(int)), this, SLOT(enableApplyButton()));
     connect(checkShowSystray, SIGNAL(toggled(bool)), this, SLOT(enableApplyButton()));
     connect(checkCloseToSystray, SIGNAL(toggled(bool)), this, SLOT(enableApplyButton()));
     connect(checkMinimizeToSysTray, SIGNAL(toggled(bool)), this, SLOT(enableApplyButton()));
@@ -389,6 +390,7 @@ void options_imp::saveOptions()
     pref->setLocale(locale);
     pref->setConfirmTorrentDeletion(confirmDeletion->isChecked());
     pref->setAlternatingRowColors(checkAltRowColors->isChecked());
+    pref->setTransferListFontScale(spinFontSize->value());
     pref->setSystrayIntegration(systrayIntegration());
     pref->setTrayIconStyle(TrayIcon::Style(comboTrayIcon->currentIndex()));
     pref->setCloseToTray(closeToTray());
@@ -555,6 +557,7 @@ void options_imp::loadOptions()
     setLocale(pref->getLocale());
     confirmDeletion->setChecked(pref->confirmTorrentDeletion());
     checkAltRowColors->setChecked(pref->useAlternatingRowColors());
+    spinFontSize->setValue(pref->getTransferListFontScale());
 
     checkShowSplash->setChecked(!pref->isSplashScreenDisabled());
     checkStartMinimized->setChecked(pref->startMinimized());
