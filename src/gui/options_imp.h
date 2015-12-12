@@ -42,6 +42,7 @@ enum DoubleClickAction
 };
 
 class AdvancedSettings;
+class ScanFoldersDelegate;
 
 QT_BEGIN_NAMESPACE
 class QCloseEvent;
@@ -176,6 +177,7 @@ private:
     QAbstractButton *applyButton;
     AdvancedSettings *advancedSettings;
     QList<QString> addedScanDirs;
+    ScanFoldersDelegate *m_scanDelegate;
     // SSL Cert / key
     QByteArray m_sslCert, m_sslKey;
 };

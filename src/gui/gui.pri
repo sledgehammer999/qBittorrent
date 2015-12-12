@@ -41,7 +41,8 @@ HEADERS += \
     $$PWD/advancedsettings.h \
     $$PWD/shutdownconfirm.h \
     $$PWD/torrentmodel.h \
-    $$PWD/torrentcreatordlg.h
+    $$PWD/torrentcreatordlg.h \
+    $$PWD/scanfoldersdelegate.h
 
 SOURCES += \
     $$PWD/mainwindow.cpp \
@@ -72,7 +73,8 @@ SOURCES += \
     $$PWD/options_imp.cpp \
     $$PWD/shutdownconfirm.cpp \
     $$PWD/torrentmodel.cpp \
-    $$PWD/torrentcreatordlg.cpp
+    $$PWD/torrentcreatordlg.cpp \
+    $$PWD/scanfoldersdelegate.cpp
 
 win32|macx {
     HEADERS += $$PWD/programupdater.h

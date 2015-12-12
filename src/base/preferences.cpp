@@ -477,7 +477,7 @@ void Preferences::addTorrentsInPause(bool b)
 
 QStringList Preferences::getScanDirs() const
 {
-    QStringList originalList = value("Preferences/Downloads/ScanDirs").toStringList();
+    QStringList originalList = value("Preferences/Downloads/ScanDirsV2").toStringList();
     if (originalList.isEmpty())
         return originalList;
 
@@ -494,27 +494,17 @@ void Preferences::setScanDirs(const QStringList &dirs)
     if (!dirs.isEmpty())
         foreach (const QString& s, dirs)
             newList << Utils::Fs::fromNativePath(s);
-    setValue("Preferences/Downloads/ScanDirs", newList);
-}
-
-QList<bool> Preferences::getDownloadInScanDirs() const
-{
-    return Utils::Misc::boolListfromStringList(value("Preferences/Downloads/DownloadInScanDirs").toStringList());
-}
-
-void Preferences::setDownloadInScanDirs(const QList<bool> &list)
-{
-    setValue("Preferences/Downloads/DownloadInScanDirs", Utils::Misc::toStringList(list));
+    setValue("Preferences/Downloads/ScanDirsV2", newList);
 }
 
 void Preferences::setScanDirsDownloadPaths(const QStringList &downloadpaths)
 {
-    setValue("Preferences/Downloads/ScanDirsDownloadPaths", downloadpaths);
+    setValue("Preferences/Downloads/ScanDirsDownloadPathsV2", downloadpaths);
 }
 
 QStringList Preferences::getScanDirsDownloadPaths() const
 {
-    return value("Preferences/Downloads/ScanDirsDownloadPaths").toStringList();
+    return value("Preferences/Downloads/ScanDirsDownloadPathsV2").toStringList();
 }
 
 QString Preferences::getScanDirsLastPath() const
