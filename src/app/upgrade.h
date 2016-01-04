@@ -122,7 +122,6 @@ bool upgrade(bool ask = true)
     if (oldResumeWasEmpty)
         Utils::Fs::forceRemove(oldResumeFilename);
 
-
     QString backupFolderPath = Utils::Fs::expandPathAbs(Utils::Fs::QDesktopServicesDataLocation() + "BT_backup");
     QDir backupFolderDir(backupFolderPath);
     QStringList backupFiles = backupFolderDir.entryList(QStringList() << QLatin1String("*.fastresume"), QDir::Files, QDir::Unsorted);

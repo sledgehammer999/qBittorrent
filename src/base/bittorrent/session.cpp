@@ -1015,11 +1015,9 @@ bool Session::addTorrent_impl(AddTorrentData addData, const MagnetUri &magnetUri
         hash = magnetUri.hash();
     }
     else if (torrentInfo.isValid()) {
-        if (!addData.resumed && !addData.createSubfolder && torrentInfo.filesCount() > 1) {
-            libtorrent::file_storage files = torrentInfo.files();
-            files.set_name("");
-            torrentInfo.remapFiles(files);
-        }
+        if (!addData.resumed && !addData.hasRootFolder)
+            torrentInfo.stripRootFolder();
+
         // Metadata
         p.ti = torrentInfo.nativeInfo();
         hash = torrentInfo.hash();
@@ -2354,6 +2352,7 @@ bool loadTorrentResumeData(const QByteArray &data, AddTorrentData &out, MagnetUr
     out.name = Utils::String::fromStdString(fast.dict_find_string_value("qBt-name"));
     out.hasSeedStatus = fast.dict_find_int_value("qBt-seedStatus");
     out.disableTempPath = fast.dict_find_int_value("qBt-tempPathDisabled");
+    out.hasRootFolder = fast.dict_find_int_value("qBt-hasRootFolder");
 
     magnetUri = MagnetUri(Utils::String::fromStdString(fast.dict_find_string_value("qBt-magnetUri")));
     out.addPaused = fast.dict_find_int_value("qBt-paused");
@@ -2440,6 +2439,7 @@ AddTorrentData Session::addDataFromParams(const AddTorrentParams &params)
     data.addPaused = params.addPaused;
     data.filePriorities = params.filePriorities;
     data.ratioLimit = params.ignoreShareRatio ? TorrentHandle::NO_RATIO_LIMIT : TorrentHandle::USE_GLOBAL_RATIO;
+    data.hasRootFolder = params.createSubfolder;
 
     // normalize save path
     if (data.savePath.isEmpty()) {
