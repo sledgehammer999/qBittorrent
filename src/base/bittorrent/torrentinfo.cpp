@@ -225,28 +225,28 @@ QStringList TorrentInfo::filesForPiece(int pieceIndex) const
     return res;
 }
 
-libtorrent::file_storage TorrentInfo::files() const
-{
-    if (!isValid()) return libtorrent::file_storage();
-    return m_nativeInfo->files();
-}
-
-libtorrent::file_storage TorrentInfo::origFiles() const
-{
-    if (!isValid()) return libtorrent::file_storage();
-    return m_nativeInfo->orig_files();
-}
-
 void TorrentInfo::renameFile(uint index, const QString &newPath)
 {
     if (!isValid()) return;
-    m_nativeInfo->rename_file(index, Utils::String::toStdString(newPath));
+    m_nativeInfo->rename_file(index, Utils::String::toStdString(Utils::Fs::toNativePath(newPath)));
 }
 
-void TorrentInfo::remapFiles(libtorrent::file_storage const &fileStorage)
+void TorrentInfo::stripRootFolder()
 {
-    if (!isValid()) return;
-    m_nativeInfo->remap_files(fileStorage);
+    if (filesCount() <= 1) return;
+
+    libtorrent::file_storage files = m_nativeInfo->files();
+
+    // Solution for case of renamed root folder
+    std::string testName = Utils::String::toStdString(filePath(0).split('/').value(0));
+    if (files.name() != testName) {
+        files.set_name(testName);
+        for (int i = 0; i < files.num_files(); ++i)
+            files.rename_file(i, files.file_path(i));
+    }
+
+    files.set_name("");
+    m_nativeInfo->remap_files(files);
 }
 
 boost::intrusive_ptr<libtorrent::torrent_info> TorrentInfo::nativeInfo() const

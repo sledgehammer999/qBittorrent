@@ -124,7 +124,6 @@ TorrentState::operator int() const
     return m_value;
 }
 
-    , createSubfolder(in.createSubfolder)
 // TorrentHandle
 
 #define SAFE_CALL(func, ...) \
@@ -182,6 +181,7 @@ TorrentHandle::TorrentHandle(Session *session, const libtorrent::torrent_handle 
     , m_ratioLimit(data.ratioLimit)
     , m_tempPathDisabled(data.disableTempPath)
     , m_hasMissingFiles(false)
+    , m_hasRootFolder(data.hasRootFolder)
     , m_pauseAfterRecheck(false)
     , m_needSaveResumeData(false)
 {
@@ -190,6 +190,8 @@ TorrentHandle::TorrentHandle(Session *session, const libtorrent::torrent_handle 
     if (!data.resumed) {
         setSequentialDownload(data.sequential);
         if (hasMetadata()) {
+            if (filesCount() == 1)
+                m_hasRootFolder = false;
             if (m_session->isAppendExtensionEnabled())
                 appendExtensionsToIncompleteFiles();
         }
@@ -214,8 +216,8 @@ QString TorrentHandle::name() const
     if (name.isEmpty())
         name = Utils::String::fromStdString(m_nativeStatus.name);
 
-    if (name.isEmpty())
-        name = Utils::String::fromStdString(m_torrentInfo.origFiles().name());
+    if (name.isEmpty() && hasMetadata())
+        name = Utils::String::fromStdString(m_torrentInfo.nativeInfo()->orig_files().name());
 
     if (name.isEmpty())
         name = m_hash;
@@ -289,6 +291,9 @@ QString TorrentHandle::savePath(bool actual) const
 
 QString TorrentHandle::rootPath(bool actual) const
 {
+    if ((filesCount() > 1) && !hasRootFolder())
+        return QString();
+
     QString firstFilePath = filePath(0);
     const int slashIndex = firstFilePath.indexOf("/");
     if (slashIndex >= 0)
@@ -301,8 +306,15 @@ QString TorrentHandle::contentPath(bool actual) const
 {
     if (filesCount() == 1)
         return QDir(savePath(actual)).absoluteFilePath(filePath(0));
-    else
+    else if (hasRootFolder())
         return rootPath(actual);
+    else
+        return savePath(actual);
+}
+
+bool TorrentHandle::hasRootFolder() const
+{
+    return m_hasRootFolder;
 }
 
 QString TorrentHandle::nativeActualSavePath() const
@@ -1436,6 +1448,7 @@ void TorrentHandle::handleSaveResumeDataAlert(libtorrent::save_resume_data_alert
     resumeData["qBt-name"] = Utils::String::toStdString(m_name);
     resumeData["qBt-seedStatus"] = m_hasSeedStatus;
     resumeData["qBt-tempPathDisabled"] = m_tempPathDisabled;
+    resumeData["qBt-hasRootFolder"] = m_hasRootFolder;
 
     m_session->handleTorrentResumeDataReady(this, resumeData);
 }
@@ -1543,6 +1556,10 @@ void TorrentHandle::handleMetadataReceivedAlert(libt::metadata_received_alert *p
     updateStatus();
     if (m_session->isAppendExtensionEnabled())
         appendExtensionsToIncompleteFiles();
+    if (!m_hasRootFolder)
+        m_torrentInfo.stripRootFolder();
+    if (filesCount() == 1)
+        m_hasRootFolder = false;
     m_session->handleTorrentMetadataReceived(this);
 
     if (isPaused()) {

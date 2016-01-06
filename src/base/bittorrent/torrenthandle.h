@@ -91,7 +91,7 @@ namespace BitTorrent
         bool sequential;
         bool hasSeedStatus;
         bool skipChecking;
-        bool createSubfolder;
+        bool hasRootFolder;
         TriStateBool addForced;
         TriStateBool addPaused;
         // for new torrents
@@ -199,6 +199,9 @@ namespace BitTorrent
         //    file4
         //
         //
+        // Torrent A* (Torrent A in "strip root folder" mode)
+        //
+        //
         // Torrent B (singlefile)
         //
         // torrentB/
@@ -215,12 +218,15 @@ namespace BitTorrent
         // |   |           rootPath           |                contentPath                 |
         // |---|------------------------------|--------------------------------------------|
         // | A | /home/user/torrents/torrentA | /home/user/torrents/torrentA               |
+        // | A*|           <empty>            | /home/user/torrents                        |
         // | B | /home/user/torrents/torrentB | /home/user/torrents/torrentB/subdir1/file1 |
         // | C | /home/user/torrents/file1    | /home/user/torrents/file1                  |
 
         QString savePath(bool actual = false) const;
         QString rootPath(bool actual = false) const;
         QString contentPath(bool actual = false) const;
+
+        bool hasRootFolder() const;
 
         int filesCount() const;
         int piecesCount() const;
@@ -385,7 +391,7 @@ namespace BitTorrent
         Session *const m_session;
         libtorrent::torrent_handle m_nativeHandle;
         libtorrent::torrent_status m_nativeStatus;
-        TorrentState  m_state;
+        TorrentState m_state;
         TorrentInfo m_torrentInfo;
         SpeedMonitor m_speedMonitor;
 
@@ -409,6 +415,7 @@ namespace BitTorrent
         qreal m_ratioLimit;
         bool m_tempPathDisabled;
         bool m_hasMissingFiles;
+        bool m_hasRootFolder;
 
         bool m_pauseAfterRecheck;
         bool m_needSaveResumeData;
