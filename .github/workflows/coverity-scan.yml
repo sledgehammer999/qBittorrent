@@ -1,9 +1,5 @@
 name: Coverity Scan
-on:
-  schedule:
-    - cron: '0 0 1 * *' # Monthly (1st day of month at midnight)
-
-  workflow_dispatch: # Mainly for testing. Don't forget the Coverity usage limits.
+on: workflow_dispatch # Mainly for testing. Don't forget the Coverity usage limits.
 
 env:
   LIBTORRENT_VERSION_TAG: v1.2.14
