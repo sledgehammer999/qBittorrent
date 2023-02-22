@@ -55,14 +55,55 @@ Section $(inst_qbt_req) ;"qBittorrent (required)"
   IntFmt $0 "0x%08X" $0
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\qBittorrent" "EstimatedSize" "$0"
 
-  ; qBittorrent ProgID
-  WriteRegStr HKLM "Software\Classes\qBittorrent" "" "qBittorrent Torrent File"
-  WriteRegStr HKLM "Software\Classes\qBittorrent" "FriendlyTypeName" "qBittorrent Torrent File"
-  WriteRegStr HKLM "Software\Classes\qBittorrent\shell" "" "open"
-  WriteRegStr HKLM "Software\Classes\qBittorrent\shell\open\command" "" '"$INSTDIR\qbittorrent.exe" "%1"'
-  WriteRegStr HKLM "Software\Classes\qBittorrent\DefaultIcon" "" '"$INSTDIR\qbittorrent.exe",1'
+  ; BitTorrent ProgID
+  WriteRegStr HKLM "Software\Classes\qBittorrent.BitTorrent.1" "" "BitTorrent"
+  WriteRegStr HKLM "Software\Classes\qBittorrent.BitTorrent.1" "FriendlyTypeName" "BitTorrent"
+  WriteRegStr HKLM "Software\Classes\qBittorrent.BitTorrent.1\DefaultIcon" "" '"$INSTDIR\qbittorrent.exe",1'
+  WriteRegStr HKLM "Software\Classes\qBittorrent.BitTorrent.1\shell" "" "open"
+  WriteRegStr HKLM "Software\Classes\qBittorrent.BitTorrent.1\shell\open\command" "" '"$INSTDIR\qbittorrent.exe" "%1"'
+
+  ; Magnet ProgID
+  WriteRegStr HKLM "Software\Classes\qBittorrent.Magnet.1" "" "URL:magnet"
+  WriteRegStr HKLM "Software\Classes\qBittorrent.Magnet.1" "FriendlyTypeName" "Magnet URI"
+  WriteRegStr HKLM "Software\Classes\qBittorrent.Magnet.1" "URL Protocol" ""
+  WriteRegStr HKLM "Software\Classes\qBittorrent.Magnet.1\DefaultIcon" "" '"$INSTDIR\qbittorrent.exe",1'
+  WriteRegStr HKLM "Software\Classes\qBittorrent.Magnet.1\shell" "" "open"
+  WriteRegStr HKLM "Software\Classes\qBittorrent.Magnet.1\shell\open\command" "" '"$INSTDIR\qbittorrent.exe" "%1"'
+
+  ; Register qBittorrent capabilities for Default Programs
+  WriteRegStr HKLM "Software\qBittorrent\Capabilities" "ApplicationDescription" "qBittorrent BitTorrent Client"
+
+  ; Register qBittorrent's location of program capabilities
+  WriteRegStr HKLM "Software\RegisteredApplications" "qBittorrent" "Software\qBittorrent\Capabilities"
+
+  !insertmacro UAC_AsUser_Call Function inst_qbt_req_user ${UAC_SYNCREGISTERS}|${UAC_SYNCOUTDIR}|${UAC_SYNCINSTDIR}
 
 SectionEnd
+
+Function inst_qbt_req_user
+
+  ; BitTorrent ProgID
+  WriteRegStr HKCU "Software\Classes\qBittorrent.BitTorrent.1" "" "BitTorrent"
+  WriteRegStr HKCU "Software\Classes\qBittorrent.BitTorrent.1" "FriendlyTypeName" "BitTorrent"
+  WriteRegStr HKCU "Software\Classes\qBittorrent.BitTorrent.1\DefaultIcon" "" '"$INSTDIR\qbittorrent.exe",1'
+  WriteRegStr HKCU "Software\Classes\qBittorrent.BitTorrent.1\shell" "" "open"
+  WriteRegStr HKCU "Software\Classes\qBittorrent.BitTorrent.1\shell\open\command" "" '"$INSTDIR\qbittorrent.exe" "%1"'
+
+  ; Magnet ProgID
+  WriteRegStr HKCU "Software\Classes\qBittorrent.Magnet.1" "" "URL:magnet"
+  WriteRegStr HKCU "Software\Classes\qBittorrent.Magnet.1" "FriendlyTypeName" "Magnet URI"
+  WriteRegStr HKCU "Software\Classes\qBittorrent.Magnet.1" "URL Protocol" ""
+  WriteRegStr HKCU "Software\Classes\qBittorrent.Magnet.1\DefaultIcon" "" '"$INSTDIR\qbittorrent.exe",1'
+  WriteRegStr HKCU "Software\Classes\qBittorrent.Magnet.1\shell" "" "open"
+  WriteRegStr HKCU "Software\Classes\qBittorrent.Magnet.1\shell\open\command" "" '"$INSTDIR\qbittorrent.exe" "%1"'
+
+  ; Register qBittorrent capabilities for Default Programs
+  WriteRegStr HKCU "Software\qBittorrent\Capabilities" "ApplicationDescription" "qBittorrent BitTorrent Client"
+
+  ; Register qBittorrent's location of program capabilities
+  WriteRegStr HKCU "Software\RegisteredApplications" "qBittorrent" "Software\qBittorrent\Capabilities"
+
+FunctionEnd
 
 ; Optional section (can be disabled by the user)
 Section /o $(inst_dekstop) ;"Create Desktop Shortcut"
@@ -93,19 +134,8 @@ FunctionEnd
 
 Section $(inst_torrent) ;"Open .torrent files with qBittorrent"
 
-  ReadRegStr $0 HKLM "Software\Classes\.torrent" ""
-
-  StrCmp $0 "qBittorrent" clear_errors 0
-  ;Check if empty string
-  StrCmp $0 "" clear_errors 0
-  ;Write old value to OpenWithProgIds
-  WriteRegStr HKLM "Software\Classes\.torrent\OpenWithProgIds" $0 ""
-
-  clear_errors:
-  ClearErrors
-
-  WriteRegStr HKLM "Software\Classes\.torrent" "" "qBittorrent"
-  WriteRegStr HKLM "Software\Classes\.torrent" "Content Type" "application/x-bittorrent"
+  WriteRegStr HKLM "Software\qBittorrent\Capabilities\FileAssociations" ".torrent" "qBittorrent.BitTorrent.1"
+  WriteRegStr HKLM "Software\Classes\.torrent" "" "qBittorrent.BitTorrent.1"
 
   !insertmacro UAC_AsUser_Call Function inst_torrent_user ${UAC_SYNCREGISTERS}|${UAC_SYNCOUTDIR}|${UAC_SYNCINSTDIR}
 
@@ -115,30 +145,16 @@ SectionEnd
 
 Function inst_torrent_user
 
-  ReadRegStr $0 HKCU "Software\Classes\.torrent" ""
-
-  StrCmp $0 "qBittorrent" clear_errors 0
-  ;Check if empty string
-  StrCmp $0 "" clear_errors 0
-  ;Write old value to OpenWithProgIds
-  WriteRegStr HKCU "Software\Classes\.torrent\OpenWithProgIds" $0 ""
-
-  clear_errors:
-  ClearErrors
-
-  WriteRegStr HKCU "Software\Classes\.torrent" "" "qBittorrent"
-  WriteRegStr HKCU "Software\Classes\.torrent" "Content Type" "application/x-bittorrent"
+  WriteRegStr HKCU "Software\qBittorrent\Capabilities\FileAssociations" ".torrent" "qBittorrent.BitTorrent.1"
+  WriteRegStr HKCU "Software\Classes\.torrent" "" "qBittorrent.BitTorrent.1"
 
 FunctionEnd
 
 Section $(inst_magnet) ;"Open magnet links with qBittorrent"
 
-  WriteRegStr HKLM "Software\Classes\magnet" "" "URL:Magnet link"
-  WriteRegStr HKLM "Software\Classes\magnet" "Content Type" "application/x-magnet"
+  WriteRegStr HKLM "Software\qBittorrent\Capabilities\UrlAssociations" "magnet" "qBittorrent.Magnet.1"
+  WriteRegStr HKLM "Software\Classes\magnet" "" "URL:magnet"
   WriteRegStr HKLM "Software\Classes\magnet" "URL Protocol" ""
-  WriteRegStr HKLM "Software\Classes\magnet\DefaultIcon" "" '"$INSTDIR\qbittorrent.exe",1'
-  WriteRegStr HKLM "Software\Classes\magnet\shell" "" "open"
-  WriteRegStr HKLM "Software\Classes\magnet\shell\open\command" "" '"$INSTDIR\qbittorrent.exe" "%1"'
 
   !insertmacro UAC_AsUser_Call Function inst_magnet_user ${UAC_SYNCREGISTERS}|${UAC_SYNCOUTDIR}|${UAC_SYNCINSTDIR}
 
@@ -148,12 +164,9 @@ SectionEnd
 
 Function inst_magnet_user
 
-  WriteRegStr HKCU "Software\Classes\magnet" "" "URL:Magnet link"
-  WriteRegStr HKCU "Software\Classes\magnet" "Content Type" "application/x-magnet"
+  WriteRegStr HKCU "Software\qBittorrent\Capabilities\UrlAssociations" "magnet" "qBittorrent.Magnet.1"
+  WriteRegStr HKCU "Software\Classes\magnet" "" "URL:magnet"
   WriteRegStr HKCU "Software\Classes\magnet" "URL Protocol" ""
-  WriteRegStr HKCU "Software\Classes\magnet\DefaultIcon" "" '"$INSTDIR\qbittorrent.exe",1'
-  WriteRegStr HKCU "Software\Classes\magnet\shell" "" "open"
-  WriteRegStr HKCU "Software\Classes\magnet\shell\open\command" "" '"$INSTDIR\qbittorrent.exe" "%1"'
 
 FunctionEnd
 

@@ -80,6 +80,106 @@ namespace
                 : profileName + u'@' + Utils::Fs::toValidFileName(profilePath.data(), {});
     }
 #endif
+
+#ifdef Q_OS_WIN
+    bool isTorrentProgID()
+    {
+        const QSettings settings(u"HKEY_CLASSES_ROOT"_qs, QSettings::NativeFormat);
+        return settings.contains(u"qBittorrent.BitTorrent.1"_qs);
+    }
+
+    bool isMagnetProgID()
+    {
+        const QSettings settings(u"HKEY_CLASSES_ROOT"_qs, QSettings::NativeFormat);
+        return settings.contains(u"qBittorrent.Magnet.1"_qs);
+    }
+
+    void registerTorrentProgID()
+    {
+        const QString exe = u"\""_qs + QCoreApplication::applicationFilePath() + u"\""_qs;
+        QSettings settings(uR"(HKEY_CURRENT_USER\Software\Classes\qBittorrent.BitTorrent.1)"_qs, QSettings::NativeFormat);
+
+        settings.setValue(u"Default"_qs, u"BitTorrent"_qs);
+        settings.setValue(u"FriendlyTypeName"_qs, u"BitTorrent"_qs);
+        settings.setValue(u"DefaultIcon"_qs, u"exe,1"_qs);
+        settings.setValue(u"shell/Default"_qs, u"open"_qs);
+        settings.setValue(u"shell/open/command/Default"_qs, uR"(exe "%1")"_qs);
+    }
+
+    void registerMagnetProgID()
+    {
+        const QString exe = u"\""_qs + QCoreApplication::applicationFilePath() + u"\""_qs;
+        QSettings settings(uR"(HKEY_CURRENT_USER\Software\Classes\qBittorrent.Magnet.1)"_qs, QSettings::NativeFormat);
+
+        settings.setValue(u"Default"_qs, u"URL:magnet"_qs);
+        settings.setValue(u"FriendlyTypeName"_qs, u"Magnet URI"_qs);
+        settings.setValue(u"URL Protocol"_qs, QString());
+        settings.setValue(u"DefaultIcon"_qs, u"exe,1"_qs);
+        settings.setValue(u"shell/Default"_qs, u"open"_qs);
+        settings.setValue(u"shell/open/command/Default"_qs, uR"(exe "%1")"_qs);
+    }
+
+    bool isBaseCapsRegistered(bool HKLM)
+    {
+        const QSettings settings((HKLM ? uR"(HKEY_LOCAL_MACHINE\Software)"_qs
+                                       : uR"(HKEY_CURRENT_USER\Software)"_qs),
+                                 QSettings::NativeFormat);
+
+        return settings.contains(u"qBittorrent/Capabilities"_qs)
+               && settings.contains(u"RegisteredApplications/qBittorrent"_qs);
+    }
+
+    bool isTorrentCapsRegistered(bool HKLM)
+    {
+        const QSettings settings((HKLM ? uR"(HKEY_LOCAL_MACHINE\Software\qBittorrent\Capabilities\FileAssociations)"_qs
+                                       : uR"(HKEY_CURRENT_USER\Software\qBittorrent\Capabilities\FileAssociations)"_qs),
+                                 QSettings::NativeFormat);
+
+        if (settings.value(u".torrent"_qs) != u"qBittorrent.BitTorrent.1"_qs)
+            return false;
+
+        const QSettings torrent(u"HKEY_CLASSES_ROOT"_qs, QSettings::NativeFormat);
+        return torrent.contains(u".torrent"_qs);
+    }
+
+    bool isMagnetCapsRegistered(bool HKLM)
+    {
+        const QSettings settings((HKLM ? uR"(HKEY_LOCAL_MACHINE\Software\qBittorrent\Capabilities\UrlAssociations)"_qs
+                                       : uR"(HKEY_CURRENT_USER\Software\qBittorrent\Capabilities\UrlAssociations)"_qs),
+                                 QSettings::NativeFormat);
+
+        if (settings.value(u"magnet"_qs) != u"qBittorrent.Magnet.1"_qs)
+            return false;
+
+        const QSettings magnet(u"HKEY_CLASSES_ROOT"_qs, QSettings::NativeFormat);
+        return magnet.contains(u"magnet/URL Protocol"_qs);
+    }
+
+    void registerBaseCaps()
+    {
+        QSettings settings(uR"(HKEY_CURRENT_USER\Software)"_qs, QSettings::NativeFormat);
+        settings.setValue(u"qBittorrent/Capabilities/ApplicationDescription"_qs, u"qBittorrent BitTorrent Client"_qs);
+        settings.setValue(u"RegisteredApplications/qBittorrent"_qs, uR"(Software\qBittorrent\Capabilities)"_qs);
+    }
+
+    void registerTorrentCaps()
+    {
+        QSettings settings(uR"(HKEY_CURRENT_USER\Software\qBittorrent\Capabilities\FileAssociations)"_qs, QSettings::NativeFormat);
+        settings.setValue(u".torrent"_qs, u"qBittorrent.BitTorrent.1"_qs);
+
+        QSettings torrent(uR"(HKEY_CURRENT_USER\Software\Classes\.torrent)"_qs, QSettings::NativeFormat);
+        torrent.setValue(u"Default"_qs, u"qBittorrent.BitTorrent.1"_qs);
+    }
+
+    void registerMagnetCaps()
+    {
+        QSettings settings(uR"(HKEY_CURRENT_USER\Software\qBittorrent\Capabilities\UrlAssociations)"_qs, QSettings::NativeFormat);
+        settings.setValue(u"magnet"_qs, u"qBittorrent.Magnet.1"_qs);
+
+        QSettings magnet(uR"(HKEY_CURRENT_USER\Software\Classes\magnet)"_qs, QSettings::NativeFormat);
+        magnet.setValue(u"URL Protocol"_qs, QString());
+    }
+#endif
 }
 
 Preferences *Preferences::m_instance = nullptr;
@@ -1031,78 +1131,64 @@ void Preferences::setNeverCheckFileAssoc(const bool check)
 
 bool Preferences::isTorrentFileAssocSet()
 {
-    const QSettings settings(u"HKEY_CURRENT_USER\\Software\\Classes"_qs, QSettings::NativeFormat);
-    if (settings.value(u".torrent/Default"_qs).toString() != u"qBittorrent")
-    {
-        qDebug(".torrent != qBittorrent");
+    if (!isTorrentProgID())
         return false;
-    }
 
-    return true;
+    return ((isBaseCapsRegistered(true) && isTorrentCapsRegistered(true))
+            || (isBaseCapsRegistered(false) && isTorrentCapsRegistered(false)));
 }
 
 bool Preferences::isMagnetLinkAssocSet()
 {
-    const QSettings settings(u"HKEY_CURRENT_USER\\Software\\Classes"_qs, QSettings::NativeFormat);
-
-    // Check magnet link assoc
-    const QString shellCommand = settings.value(u"magnet/shell/open/command/Default"_qs, QString()).toString();
-
-    const QRegularExpressionMatch exeRegMatch = QRegularExpression(u"\"([^\"]+)\".*"_qs).match(shellCommand);
-    if (!exeRegMatch.hasMatch())
+    if (!isMagnetProgID())
         return false;
 
-    const Path assocExe {exeRegMatch.captured(1)};
-    if (assocExe != Path(qApp->applicationFilePath()))
-        return false;
-
-    return true;
+    return ((isBaseCapsRegistered(true) && isMagnetCapsRegistered(true))
+            || (isBaseCapsRegistered(false) && isMagnetCapsRegistered(false)));
 }
 
 void Preferences::setTorrentFileAssoc(const bool set)
 {
-    QSettings settings(u"HKEY_CURRENT_USER\\Software\\Classes"_qs, QSettings::NativeFormat);
-
-    // .Torrent association
     if (set)
     {
-        const QString oldProgId = settings.value(u".torrent/Default"_qs).toString();
-        if (!oldProgId.isEmpty() && (oldProgId != u"qBittorrent"))
-            settings.setValue((u".torrent/OpenWithProgids/" + oldProgId), QString());
-        settings.setValue(u".torrent/Default"_qs, u"qBittorrent"_qs);
+        registerTorrentProgID();
+        registerBaseCaps();
+        registerTorrentCaps();
+
     }
-    else if (isTorrentFileAssocSet())
+    else
     {
-        settings.setValue(u".torrent/Default"_qs, QString());
+        QSettings settings(uR"(HKEY_CURRENT_USER\Software\qBittorrent\Capabilities)"_qs, QSettings::NativeFormat);
+        settings.remove(u"FileAssociations"_qs);
+
+        // The HKLM key might take over, so write an empty key in HKCU
+        if (isTorrentCapsRegistered(true))
+            settings.setValue(u"FileAssociations"_qs, QString());
     }
 
-    SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, 0, 0);
+    ::SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, 0, 0);
 }
 
 void Preferences::setMagnetLinkAssoc(const bool set)
 {
-    QSettings settings(u"HKEY_CURRENT_USER\\Software\\Classes"_qs, QSettings::NativeFormat);
-
-    // Magnet association
     if (set)
     {
-        const QString applicationFilePath = Path(qApp->applicationFilePath()).toString();
-        const QString commandStr = u'"' + applicationFilePath + u"\" \"%1\"";
-        const QString iconStr = u'"' + applicationFilePath + u"\",1";
+        registerMagnetProgID();
+        registerBaseCaps();
+        registerMagnetCaps();
 
-        settings.setValue(u"magnet/Default"_qs, u"URL:Magnet link"_qs);
-        settings.setValue(u"magnet/Content Type"_qs, u"application/x-magnet"_qs);
-        settings.setValue(u"magnet/URL Protocol"_qs, QString());
-        settings.setValue(u"magnet/DefaultIcon/Default"_qs, iconStr);
-        settings.setValue(u"magnet/shell/Default"_qs, u"open"_qs);
-        settings.setValue(u"magnet/shell/open/command/Default"_qs, commandStr);
     }
-    else if (isMagnetLinkAssocSet())
+    else
     {
-        settings.remove(u"magnet"_qs);
+        QSettings settings(uR"(HKEY_CURRENT_USER\Software\qBittorrent\Capabilities)"_qs, QSettings::NativeFormat);
+        settings.remove(u"UrlAssociations"_qs);
+
+        // The HKLM key might take over, so write an empty key in HKCU
+        if (isMagnetCapsRegistered(true))
+            settings.setValue(u"UrlAssociations"_qs, QString());
     }
 
-    SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, 0, 0);
+    ::SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, 0, 0);
 }
 #endif // Q_OS_WIN
 
